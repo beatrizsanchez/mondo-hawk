@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,7 +111,14 @@ public class HWizardPage extends WizardPage {
 	private Text nameText;
 	private Text folderText;
 	private Combo dbidText;
-	private CheckboxTableViewer pluginTable;
+	
+	//private CheckboxTableViewer pluginTable;
+	
+	private CheckboxTableViewer metamodelPluginTable;
+	private CheckboxTableViewer modelPluginTable;
+	private CheckboxTableViewer updaterPluginTable;
+	//private CheckboxTableViewer graphChangeListenersPluginTable;
+	
 	private Combo factoryIdText;
 	private Text locationText;
 	private boolean isNew;
@@ -201,57 +209,12 @@ public class HWizardPage extends WizardPage {
 			}
 		});
 
-		label = new Label(container, SWT.NULL);
-		gd = new GridData(GridData.VERTICAL_ALIGN_BEGINNING);
-		label.setLayoutData(gd);
-		label.setText("&Enabled plugins:");
-
-		pluginTable = CheckboxTableViewer.newCheckList(container, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
-		pluginTable.setContentProvider(new ListContentProvider());
-		pluginTable.setLabelProvider(new LabelProvider());
-		pluginTable.setInput(HManager.getInstance().getAvailablePlugins());
-		pluginTable.setAllChecked(true);
-		pluginTable.addCheckStateListener(new ICheckStateListener() {
-			@Override
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				dialogChanged();
-			}
-		});
-
-		gd = new GridData(GridData.FILL_HORIZONTAL);
-		pluginTable.getTable().setLayoutData(gd);
-		pluginTable.getTable().setHeaderVisible(false);
-
-		pluginTable.addCheckStateListener(new ICheckStateListener() {
-			@Override
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				dialogChanged();
-			}
-		});
-
-		Composite cTableButtons = new Composite(container, SWT.NULL);
-		gd = new GridData(SWT.FILL, SWT.TOP, true, true);
-		cTableButtons.setLayoutData(gd);
-		cTableButtons.setLayout(new FillLayout(SWT.VERTICAL));
-		Button btnEnableAll = new Button(cTableButtons, SWT.NULL);
-		btnEnableAll.setText("Enable all");
-		btnEnableAll.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				pluginTable.setAllChecked(true);
-				dialogChanged();
-			}
-		});
-		Button btnDisableAll = new Button(cTableButtons, SWT.NULL);
-		btnDisableAll.setText("Disable all");
-		btnDisableAll.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				pluginTable.setAllChecked(false);
-				dialogChanged();
-			}
-		});
-
+		HManager instance = HManager.getInstance();
+		
+		modelPluginTable = pluginTable(container, "Model", toList(instance.getModelTypes()));
+		metamodelPluginTable = pluginTable(container, "Meta-Model", toList(instance.getMetaModelTypes()));
+		updaterPluginTable = pluginTable(container, "Updater", toList(instance.getUpdaterTypes()));
+		
 		label = new Label(container, SWT.NULL);
 		label.setText("Back-end:");
 
@@ -291,6 +254,67 @@ public class HWizardPage extends WizardPage {
 		initialize();
 		dialogChanged();
 		setControl(container);
+	}
+	
+	private List<String> toList(Set<String> set){
+		List<String> list = new ArrayList<>();
+		list.addAll(set);
+		return list;
+	}
+
+	private CheckboxTableViewer pluginTable(Composite container, String tableLabel, List<String> plugins) {
+		Label label = new Label(container, SWT.NULL);
+		GridData gd = new GridData(GridData.VERTICAL_ALIGN_BEGINNING);
+		label.setLayoutData(gd);
+		String formatter = "&%s plugins:";
+		label.setText(String.format(formatter, tableLabel));
+
+		final CheckboxTableViewer tableviewer = CheckboxTableViewer.newCheckList(container, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
+		tableviewer.setContentProvider(new ListContentProvider());
+		tableviewer.setLabelProvider(new LabelProvider());
+		tableviewer.setInput(plugins);
+		tableviewer.setAllChecked(true);
+		tableviewer.addCheckStateListener(new ICheckStateListener() {
+			@Override
+			public void checkStateChanged(CheckStateChangedEvent event) {
+				dialogChanged();
+			}
+		});
+
+		gd = new GridData(GridData.FILL_HORIZONTAL);
+		tableviewer.getTable().setLayoutData(gd);
+		tableviewer.getTable().setHeaderVisible(false);
+
+		tableviewer.addCheckStateListener(new ICheckStateListener() {
+			@Override
+			public void checkStateChanged(CheckStateChangedEvent event) {
+				dialogChanged();
+			}
+		});
+
+		Composite cTableButtons = new Composite(container, SWT.NULL);
+		gd = new GridData(SWT.FILL, SWT.TOP, true, true);
+		cTableButtons.setLayoutData(gd);
+		cTableButtons.setLayout(new FillLayout(SWT.VERTICAL));
+		Button btnEnableAll = new Button(cTableButtons, SWT.NULL);
+		btnEnableAll.setText("Enable all");
+		btnEnableAll.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				tableviewer.setAllChecked(true);
+				dialogChanged();
+			}
+		});
+		Button btnDisableAll = new Button(cTableButtons, SWT.NULL);
+		btnDisableAll.setText("Disable all");
+		btnDisableAll.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				tableviewer.setAllChecked(false);
+				dialogChanged();
+			}
+		});
+		return tableviewer;
 	}
 
 	private void initialize() {
@@ -398,16 +422,15 @@ public class HWizardPage extends WizardPage {
 		}
 
 		// check plugins form a valid Hawk
-		final List<String> enabledPlugins = getPlugins();
-		if (!containsAny(enabledPlugins, hminstance.getUpdaterTypes())) {
+		if (!containsAny(getUpdaterPlugins(), hminstance.getUpdaterTypes())) {
 			updateStatus("At least one updater plugin must be enabled");
 			return;
 		}
-		if (!containsAny(enabledPlugins, hminstance.getMetaModelTypes())) {
+		if (!containsAny(getMetaModelPlugins(), hminstance.getMetaModelTypes())) {
 			updateStatus("At least one metamodel parser plugin must be enabled");
 			return;
 		}
-		if (!containsAny(enabledPlugins, hminstance.getModelTypes())) {
+		if (!containsAny(getModelPlugins(), hminstance.getModelTypes())) {
 			updateStatus("At least one model parser plugin must be enabled");
 			return;
 		}
@@ -420,31 +443,38 @@ public class HWizardPage extends WizardPage {
 		return !filter.isEmpty();
 	}
 
-	@SuppressWarnings("unchecked")
 	protected void updatePlugins() {
 		try {
 			final IHawkFactory factory = factories.get(getFactoryID());
-			List<String> plugins = factory
-					.listPlugins(locationText.getText());
-			if (plugins == null) {
-				plugins = new ArrayList<>();
-				plugins.addAll(HUIManager.getInstance().getAvailablePlugins());
-			}
-
-			final List<String> oldInput = (List<String>) pluginTable.getInput();
-			final List<Object> oldChecked = Arrays.asList(pluginTable.getCheckedElements());
-			if (!oldInput.equals(plugins)) {
-				pluginTable.setInput(plugins);
-				pluginTable.setAllChecked(true);
-				for (String newElem : plugins) {
-					// Keep unchecked values across switches
-					if (oldInput.contains(newElem) && !oldChecked.contains(newElem)) {
-						pluginTable.setChecked(newElem, false);
-					}
-				}
-			}
+			HUIManager instance = HUIManager.getInstance();
+			extractPlugins(factory, modelPluginTable, instance.getModelTypes());
+			extractPlugins(factory, metamodelPluginTable, instance.getMetaModelTypes());
+			extractPlugins(factory, updaterPluginTable, instance.getUpdaterTypes());
 		} catch (Exception ex) {
 			Activator.logError("Could not refresh plugin list", ex);
+		}
+	}
+
+	private final void extractPlugins(IHawkFactory factory, final CheckboxTableViewer table, Set<String> availablPlugins) throws Exception {
+		List<String> plugins = factory.listPlugins(locationText.getText());
+		if (plugins == null) {
+			plugins = new ArrayList<>();
+			plugins.addAll(availablPlugins);
+		}
+		List<String> oldInput = new ArrayList<>();
+		for ( Object va :((HashSet) table.getInput())) {
+			oldInput.add(va.toString());
+		}
+		final List<Object> oldChecked = Arrays.asList(table.getCheckedElements());
+		if (!oldInput.equals(plugins)) {
+			table.setInput(plugins);
+			table.setAllChecked(true);
+			for (String newElem : plugins) {
+				// Keep unchecked values across switches
+				if (oldInput.contains(newElem) && !oldChecked.contains(newElem)) {
+					table.setChecked(newElem, false);
+				}
+			}
 		}
 	}
 
@@ -457,8 +487,7 @@ public class HWizardPage extends WizardPage {
 	protected void updateBackends() {
 		try {
 			final IHawkFactory factory = factories.get(getFactoryID());
-			List<String> backends = factory
-					.listBackends(locationText.getText());
+			List<String> backends = factory.listBackends(locationText.getText());
 			if (backends == null) {
 				backends = new ArrayList<>();
 				backends.addAll(HUIManager.getInstance().getIndexTypes());
@@ -482,11 +511,35 @@ public class HWizardPage extends WizardPage {
 		return folderText.getText();
 	}
 
-	public List<String> getPlugins() {
+	public List<String> getModelPlugins() {
 		List<String> selected = new ArrayList<String>();
-		for (Object checked : pluginTable.getCheckedElements()) {
+		for (Object checked : modelPluginTable.getCheckedElements()) {
 			selected.add(checked.toString());
 		}
+		return selected;
+	}
+	
+	public List<String> getMetaModelPlugins() {
+		List<String> selected = new ArrayList<String>();
+		for (Object checked : metamodelPluginTable.getCheckedElements()) {
+			selected.add(checked.toString());
+		}
+		return selected;
+	}
+
+	public List<String> getUpdaterPlugins() {
+		List<String> selected = new ArrayList<String>();
+		for (Object checked : updaterPluginTable.getCheckedElements()) {
+			selected.add(checked.toString());
+		}
+		return selected;
+	}
+	
+	public List<String> getPlugins() {
+		List<String> selected = new ArrayList<String>();
+		selected.addAll(getModelPlugins());
+		selected.addAll(getMetaModelPlugins());
+		selected.addAll(getUpdaterPlugins());
 		return selected;
 	}
 
