@@ -107,4 +107,14 @@ public class ThriftRemoteHawkFactory implements IHawkFactory {
 		return client.listPlugins();
 	}
 
+	@Override
+	public boolean isRemote() {
+		return true;
+	}
+
+	@Override
+	public String getHumanReadableName() {
+		return "Remote Thrift";
+	}
+
 }

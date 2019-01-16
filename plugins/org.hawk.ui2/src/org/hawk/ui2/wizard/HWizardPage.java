@@ -22,12 +22,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -58,6 +58,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Text;
 import org.hawk.core.IHawkFactory;
+import org.hawk.core.IMetaModelResourceFactory;
+import org.hawk.core.IModelResourceFactory;
+import org.hawk.core.IModelUpdater;
+import org.hawk.core.graph.IGraphDatabase;
 import org.hawk.core.runtime.ModelIndexerImpl;
 import org.hawk.osgiserver.HManager;
 import org.hawk.ui2.Activator;
@@ -82,8 +86,7 @@ public class HWizardPage extends WizardPage {
 		public Object[] getElements(Object inputElement) {
 			if (inputElement instanceof List) {
 				return ((List<?>) inputElement).toArray();
-			}
-			else {
+			} else {
 				return new Object[0];
 			}
 		}
@@ -110,21 +113,23 @@ public class HWizardPage extends WizardPage {
 
 	private Text nameText;
 	private Text folderText;
-	private Combo dbidText;
-	
-	//private CheckboxTableViewer pluginTable;
-	
+	private Combo backendNameText;
+
 	private CheckboxTableViewer metamodelPluginTable;
 	private CheckboxTableViewer modelPluginTable;
 	private CheckboxTableViewer updaterPluginTable;
-	//private CheckboxTableViewer graphChangeListenersPluginTable;
-	
-	private Combo factoryIdText;
-	private Text locationText;
+
+	private Combo factoryNameText;
+	private Text remoteLocationText;
 	private boolean isNew;
 
 	private HUIManager hminstance;
 	private Map<String, IHawkFactory> factories;
+	private Map<String, IGraphDatabase> backends;
+	
+	private Map<String, IModelUpdater> updaters;
+	private Map<String, ?> models;
+	private Map<String, ?> metamodels;
 
 	public HWizardPage(ISelection selection) {
 		super("wizardPage");
@@ -160,18 +165,19 @@ public class HWizardPage extends WizardPage {
 		label = new Label(container, SWT.NULL);
 		label.setText("Instance type:");
 
-		factoryIdText = new Combo(container, SWT.READ_ONLY);
+		factoryNameText = new Combo(container, SWT.READ_ONLY);
 		factories = hminstance.getHawkFactoryInstances();
 		gd = new GridData(GridData.FILL_HORIZONTAL);
 		gd.horizontalSpan = 2;
-		factoryIdText.setLayoutData(gd);
-		final List<String> sortedFactories = new ArrayList<>(factories.keySet());
+		factoryNameText.setLayoutData(gd);
+		final List<String> sortedFactories = factories.values().stream().map(IHawkFactory::getHumanReadableName)
+				.collect(Collectors.toList());
 		Collections.sort(sortedFactories);
 		for (String factory : sortedFactories) {
-			factoryIdText.add(factory);
+			factoryNameText.add(factory);
 		}
-		factoryIdText.select(0);
-		factoryIdText.addSelectionListener(new DialogChangeSelectionListener());
+		factoryNameText.select(0);
+		factoryNameText.addSelectionListener(new DialogChangeSelectionListener());
 
 		label = new Label(container, SWT.NULL);
 		label.setText("&Local storage folder:");
@@ -195,13 +201,13 @@ public class HWizardPage extends WizardPage {
 		label = new Label(container, SWT.NULL);
 		label.setText("Remote location:");
 
-		locationText = new Text(container, SWT.BORDER | SWT.SINGLE);
+		remoteLocationText = new Text(container, SWT.BORDER | SWT.SINGLE);
 		gd = new GridData(GridData.FILL_HORIZONTAL);
 		gd.horizontalSpan = 2;
-		locationText.setLayoutData(gd);
-		locationText.setText("http://localhost:8080/thrift/hawk/tuple");
+		remoteLocationText.setLayoutData(gd);
+		remoteLocationText.setText("http://localhost:8080/thrift/hawk/tuple");
 		// folderText.setEditable(false);
-		locationText.addFocusListener(new FocusAdapter() {
+		remoteLocationText.addFocusListener(new FocusAdapter() {
 			@Override
 			public void focusLost(FocusEvent e) {
 				updateBackends();
@@ -210,22 +216,41 @@ public class HWizardPage extends WizardPage {
 		});
 
 		HManager instance = HManager.getInstance();
+
+		updaters = instance.getModelUpdaterInstances();
+		metamodels = instance.getMetamodelParserInstances();
+		models = instance.getModelParserInstances();
 		
-		modelPluginTable = pluginTable(container, "Model", toList(instance.getModelTypes()));
-		metamodelPluginTable = pluginTable(container, "Meta-Model", toList(instance.getMetaModelTypes()));
-		updaterPluginTable = pluginTable(container, "Updater", toList(instance.getUpdaterTypes()));
-		
+		// modelPluginTable = pluginTable(container, "Model",
+		// instance.getModelParserInstances().entrySet().stream().collect(Collectors.toMap(k->k,
+		// v->(String) ((IModelResourceFactory)v).getHumanReadableName())));
+		// metamodelPluginTable = pluginTable(container, "Meta-Model",
+		// toList(instance.getMetaModelTypes()));
+		updaterPluginTable = pluginTable(container, "Updater", instance.getModelUpdaterInstances(), new LabelProvider() {
+			@Override
+			public String getText(Object element) {
+				if (element !=null ) {
+					String updater = (String)element;
+					IModelUpdater iModelUpdater = updaters.get(updater);
+					return (iModelUpdater != null) ? iModelUpdater.getName() : updater ;					
+				} else {
+					return "";
+				}
+			}
+		});
+
 		label = new Label(container, SWT.NULL);
 		label.setText("Back-end:");
-
-		dbidText = new Combo(container, SWT.READ_ONLY);
+		backends = hminstance.getBackendInstances();
+		backendNameText = new Combo(container, SWT.READ_ONLY);
 		gd = new GridData(GridData.FILL_HORIZONTAL);
 		gd.horizontalSpan = 2;
 		// dbidText.set
-		dbidText.setLayoutData(gd);
-		for (String db : hminstance.getIndexTypes())
-			dbidText.add(db);
-		dbidText.select(0);
+		backendNameText.setLayoutData(gd);
+		List<String> backendNames = getBackendNames();
+		for (String db : backendNames)
+			backendNameText.add(db);
+		backendNameText.select(0);
 
 		label = new Label(container, SWT.NULL);
 		gd = new GridData(GridData.VERTICAL_ALIGN_BEGINNING);
@@ -241,38 +266,47 @@ public class HWizardPage extends WizardPage {
 
 		minDelayText = new Text(cDelayRow, SWT.BORDER | SWT.SINGLE);
 		minDelayText.setText(ModelIndexerImpl.DEFAULT_MINDELAY + "");
-		minDelayText
-				.setToolTipText("Minimum delay between periodic synchronisations in milliseconds.");
+		minDelayText.setToolTipText("Minimum delay between periodic synchronisations in milliseconds.");
 		minDelayText.addModifyListener(dialogChangeListener);
 
 		maxDelayText = new Text(cDelayRow, SWT.BORDER | SWT.SINGLE);
 		maxDelayText.setText(ModelIndexerImpl.DEFAULT_MAXDELAY + "");
-		maxDelayText
-				.setToolTipText("Maximum delay between periodic synchronisations in milliseconds (0 disables periodic synchronisations).");
+		maxDelayText.setToolTipText(
+				"Maximum delay between periodic synchronisations in milliseconds (0 disables periodic synchronisations).");
 		maxDelayText.addModifyListener(dialogChangeListener);
 
 		initialize();
 		dialogChanged();
 		setControl(container);
 	}
-	
-	private List<String> toList(Set<String> set){
+
+	private List<String> getBackendNames() {
+		List<String> backendNames = backends.values().stream().map(IGraphDatabase::getHumanReadableName)
+				.collect(Collectors.toList());
+		return backendNames;
+	}
+
+	private List<String> toList(Set<String> set) {
 		List<String> list = new ArrayList<>();
 		list.addAll(set);
 		return list;
 	}
 
-	private CheckboxTableViewer pluginTable(Composite container, String tableLabel, List<String> plugins) {
+	private CheckboxTableViewer pluginTable(Composite container, String tableLabel, Map<String,?> plugins, LabelProvider labelProvider) {
 		Label label = new Label(container, SWT.NULL);
 		GridData gd = new GridData(GridData.VERTICAL_ALIGN_BEGINNING);
 		label.setLayoutData(gd);
 		String formatter = "&%s plugins:";
 		label.setText(String.format(formatter, tableLabel));
 
-		final CheckboxTableViewer tableviewer = CheckboxTableViewer.newCheckList(container, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
+		final CheckboxTableViewer tableviewer = CheckboxTableViewer.newCheckList(container,
+				SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
 		tableviewer.setContentProvider(new ListContentProvider());
-		tableviewer.setLabelProvider(new LabelProvider());
-		tableviewer.setInput(plugins);
+		tableviewer.setLabelProvider(labelProvider);
+		final List<String> values = new ArrayList<String>();
+		plugins.keySet().forEach(e->values.add((String) e)); 
+		tableviewer.setInput(values);
+		
 		tableviewer.setAllChecked(true);
 		tableviewer.addCheckStateListener(new ICheckStateListener() {
 			@Override
@@ -324,18 +358,16 @@ public class HWizardPage extends WizardPage {
 		folderText.setText(basePath + File.separator + "myhawk");
 	}
 
-	private String basePath = ResourcesPlugin.getWorkspace().getRoot()
-			.getLocation().toFile().toString();
+	private String basePath = ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile().toString();
 
 	/**
-	 * Uses the standard container selection dialog to choose the new value for
-	 * the container field.
+	 * Uses the standard container selection dialog to choose the new value for the
+	 * container field.
 	 */
 	private void handleBrowse() {
 		DirectoryDialog dd = new DirectoryDialog(getShell(), SWT.OPEN);
 
-		dd.setFilterPath(ResourcesPlugin.getWorkspace().getRoot().getLocation()
-				.toFile().toString());
+		dd.setFilterPath(ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile().toString());
 		dd.setMessage("Select a folder where the index files will be stored");
 		dd.setText("Select a directory");
 		String result = dd.open();
@@ -343,15 +375,15 @@ public class HWizardPage extends WizardPage {
 		if (result != null) {
 			folderText.setText(result);
 		}
-
 	}
 
 	/**
 	 * Ensures that both text fields are set.
 	 */
 	private void dialogChanged() {
-		final IHawkFactory factory = factories.get(getFactoryID());
-		locationText.setEnabled(factory.instancesUseLocation());
+		IHawkFactory factory = getSelectedFactory();
+		folderText.setEnabled(!factory.isRemote());
+		remoteLocationText.setEnabled(factory.isRemote());
 		updateBackends();
 		updatePlugins();
 
@@ -375,20 +407,36 @@ public class HWizardPage extends WizardPage {
 			updateStatus("Index storage folder must be specified");
 			return;
 		}
-		// must not already exist
-		File f = new File(getContainerName());
-		if (f.exists() && f.isDirectory() && f.listFiles().length > 0) {
-			updateStatus(hawkConnectWarning);
-			return;
-		}
-		// must be writable
-		if (!f.getParentFile().exists() && !f.getParentFile().canWrite()) {
-			updateStatus("Index storage folder must be writeable");
-			return;
+		if (!factory.isRemote()) {
+			File f = new File(getContainerName());
+			// must not already exist
+			if (f.exists() && f.isDirectory() && f.listFiles().length > 0) {
+				updateStatus(hawkConnectWarning);
+				return;
+			}
+			// must be writable
+			if (!f.getParentFile().exists() && !f.getParentFile().canWrite()) {
+				updateStatus("Index storage folder must be writeable");
+				return;
+			}
+			
+			if (!containsAny(getSelectedModelUpdaterPlugins(), hminstance.getUpdaterTypes())) {
+				updateStatus("At least one updater plugin must be enabled");
+				return;
+			}
+			/*
+			if (!containsAny(getSelectedMetaModelPlugins(), hminstance.getMetaModelTypes())) {
+				updateStatus("At least one metamodel parser plugin must be enabled");
+				return;
+			}
+			if (!containsAny(getSelectedModelPlugins(), hminstance.getModelTypes())) {
+				updateStatus("At least one model parser plugin must be enabled");
+				return;
+			}*/
 		}
 
 		// check back-end is chosen
-		if (dbidText.getText().equals("")) {
+		if (backendNameText.getText().equals("")) {
 			updateStatus("Hawk back-end needs to be selected");
 			return;
 		}
@@ -421,19 +469,7 @@ public class HWizardPage extends WizardPage {
 			return;
 		}
 
-		// check plugins form a valid Hawk
-		if (!containsAny(getUpdaterPlugins(), hminstance.getUpdaterTypes())) {
-			updateStatus("At least one updater plugin must be enabled");
-			return;
-		}
-		if (!containsAny(getMetaModelPlugins(), hminstance.getMetaModelTypes())) {
-			updateStatus("At least one metamodel parser plugin must be enabled");
-			return;
-		}
-		if (!containsAny(getModelPlugins(), hminstance.getModelTypes())) {
-			updateStatus("At least one model parser plugin must be enabled");
-			return;
-		}
+		// TODO timeaware Validation
 
 		updateStatus(null);
 	}
@@ -445,27 +481,32 @@ public class HWizardPage extends WizardPage {
 
 	protected void updatePlugins() {
 		try {
-			final IHawkFactory factory = factories.get(getFactoryID());
+			final IHawkFactory factory = getSelectedFactory();
 			HUIManager instance = HUIManager.getInstance();
-			extractPlugins(factory, modelPluginTable, instance.getModelTypes());
-			extractPlugins(factory, metamodelPluginTable, instance.getMetaModelTypes());
+			//extractPlugins(factory, modelPluginTable, instance.getModelTypes());
+			//extractPlugins(factory, metamodelPluginTable, instance.getMetaModelTypes());
 			extractPlugins(factory, updaterPluginTable, instance.getUpdaterTypes());
 		} catch (Exception ex) {
 			Activator.logError("Could not refresh plugin list", ex);
 		}
 	}
 
-	private final void extractPlugins(IHawkFactory factory, final CheckboxTableViewer table, Set<String> availablPlugins) throws Exception {
-		List<String> plugins = factory.listPlugins(locationText.getText());
+	private final void extractPlugins(IHawkFactory factory, final CheckboxTableViewer table,
+			Set<String> availablPlugins) throws Exception {
+		List<String> plugins = factory.listPlugins(remoteLocationText.getText());
 		if (plugins == null) {
 			plugins = new ArrayList<>();
 			plugins.addAll(availablPlugins);
 		}
 		List<String> oldInput = new ArrayList<>();
-		for ( Object va :((HashSet) table.getInput())) {
-			oldInput.add(va.toString());
+		for (Object e : (List<String>) table.getInput()) {
+			oldInput.add((String) e);
 		}
-		final List<Object> oldChecked = Arrays.asList(table.getCheckedElements());
+		
+		final List<String> oldChecked = new ArrayList<String>();
+		for (Object o : table.getCheckedElements()) {
+			oldChecked.add((String) o);
+		}
 		if (!oldInput.equals(plugins)) {
 			table.setInput(plugins);
 			table.setAllChecked(true);
@@ -486,20 +527,23 @@ public class HWizardPage extends WizardPage {
 
 	protected void updateBackends() {
 		try {
-			final IHawkFactory factory = factories.get(getFactoryID());
-			List<String> backends = factory.listBackends(locationText.getText());
-			if (backends == null) {
-				backends = new ArrayList<>();
-				backends.addAll(HUIManager.getInstance().getIndexTypes());
+			final IHawkFactory factory = getSelectedFactory();
+			List<String> backendPlugins = factory.listBackends(remoteLocationText.getText());
+			if (backendPlugins == null) {
+				backendPlugins = new ArrayList<>();
+				backendPlugins.addAll(HUIManager.getInstance().getIndexTypes());
 			}
-			String[] newItems = backends.toArray(new String[backends.size()]);
-			if (!Arrays.equals(newItems, dbidText.getItems())) {
-				dbidText.removeAll();
-				for (String s : backends) {
-					dbidText.add(s);
+			final List<String> plugins = backendPlugins;
+			
+			List<String> newNames = backends.entrySet().stream().filter(e-> plugins.contains(e.getKey())).map(e->e.getValue().getHumanReadableName()).collect(Collectors.toList());
+			
+			if (newNames.equals(Arrays.asList(backendNameText.getItems()))) {
+				backendNameText.removeAll();
+				for (String s : newNames) {
+					backendNameText.add(s);
 				}
-				if (newItems.length > 0) {
-					dbidText.select(0);
+				if (newNames.size() > 0) {
+					backendNameText.select(0);
 				}
 			}
 		} catch (Exception ex) {
@@ -511,56 +555,62 @@ public class HWizardPage extends WizardPage {
 		return folderText.getText();
 	}
 
-	public List<String> getModelPlugins() {
-		List<String> selected = new ArrayList<String>();
-		for (Object checked : modelPluginTable.getCheckedElements()) {
-			selected.add(checked.toString());
-		}
-		return selected;
-	}
-	
-	public List<String> getMetaModelPlugins() {
-		List<String> selected = new ArrayList<String>();
-		for (Object checked : metamodelPluginTable.getCheckedElements()) {
-			selected.add(checked.toString());
-		}
-		return selected;
+	protected List<String> getSelectedModelPlugins() {
+		Map<String, IModelResourceFactory> modelFactories = hminstance.getModelParserInstances();
+		List<String> checked = Arrays.asList((String[]) modelPluginTable.getCheckedElements());
+		List<String> plugins = modelFactories.entrySet().stream()
+				.filter(e -> checked.contains(e.getValue().getHumanReadableName())).map(m -> m.getKey())
+				.collect(Collectors.toList());
+		return plugins;
 	}
 
-	public List<String> getUpdaterPlugins() {
-		List<String> selected = new ArrayList<String>();
-		for (Object checked : updaterPluginTable.getCheckedElements()) {
-			selected.add(checked.toString());
-		}
-		return selected;
+	protected List<String> getSelectedMetaModelPlugins() {
+		Map<String, IMetaModelResourceFactory> modelFactories = hminstance.getMetamodelParserInstances();
+		List<String> checked = Arrays.asList((String[]) metamodelPluginTable.getCheckedElements());
+		List<String> plugins = modelFactories.entrySet().stream()
+				.filter(e -> checked.contains(e.getValue().getHumanReadableName())).map(m -> m.getKey())
+				.collect(Collectors.toList());
+		return plugins;
 	}
-	
-	public List<String> getPlugins() {
+
+	protected List<String> getSelectedModelUpdaterPlugins() {
+		return Arrays.asList(updaterPluginTable.getCheckedElements()).stream().map(e -> (String) e).collect(Collectors.toList());
+	}
+
+	protected List<String> getSelectedAdvancedPlugins() {
 		List<String> selected = new ArrayList<String>();
-		selected.addAll(getModelPlugins());
-		selected.addAll(getMetaModelPlugins());
-		selected.addAll(getUpdaterPlugins());
+		//selected.addAll(getSelectedModelPlugins());
+		selected.addAll(getSelectedMetaModelPlugins());
+		//selected.addAll(getSelectedModelUpdaterPlugins());
 		return selected;
 	}
 
 	public String getDBID() {
-		return dbidText.getText();
+		return backendNameText.getText();
 	}
 
 	public String getHawkName() {
 		return nameText.getText();
 	}
-
-	public String getFactoryID() {
-		return factoryIdText.getText();
+	
+	protected String getSelectedFactoryPluginId(){
+		String selected =  factoryNameText.getText();
+		List<String> plugins = factories.entrySet().stream()
+				.filter(e -> selected.equals(e.getValue().getHumanReadableName())).map(m -> m.getKey())
+				.collect(Collectors.toList());
+		return plugins.get(0);
+	}
+	
+	protected IHawkFactory getSelectedFactory(){
+		return factories.get(getSelectedFactoryPluginId());
 	}
 
 	public IHawkFactory getFactory() throws CoreException {
-		return hminstance.createHawkFactory(getFactoryID());
+		return hminstance.createHawkFactory(getSelectedFactoryPluginId());
 	}
 
 	public String getLocation() {
-		return locationText.getText();
+		return remoteLocationText.getText();
 	}
 
 	public int getMaxDelay() {

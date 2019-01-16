@@ -28,4 +28,9 @@ public class LevelDBGreycatDatabase extends AbstractGreycatDatabase {
 			.withStorage(new LevelDBStorage(storageFolder.getAbsolutePath()))
 			.build();
 	}
+	
+	@Override
+	public String getHumanReadableName() {
+		return "Level DB " + super.getHumanReadableName();
+	}
 }

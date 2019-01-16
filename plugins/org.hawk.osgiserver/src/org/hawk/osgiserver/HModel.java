@@ -133,7 +133,7 @@ public class HModel implements IStateListener {
 
 			if (hawkFactory.instancesCreateGraph()) {
 				console.println("Setting up hawk's back-end store:");
-				db = manager.createGraph(hm.hawk);
+				db = manager.createBackendGraph(hm.hawk);
 				db.run(storageFolder, console);
 				hm.hawk.getModelIndexer().setDB(db, true);
 			}
@@ -204,7 +204,7 @@ public class HModel implements IStateListener {
 	public void setDbType(String dbType) throws Exception {
 		hawk.setDatabaseType(dbType);
 		if (hawkFactory.instancesCreateGraph()) {
-			IGraphDatabase db = manager.createGraph(this.hawk);
+			IGraphDatabase db = manager.createBackendGraph(this.hawk);
 			db.run(new File(this.getHawkConfig().getStorageFolder()), getConsole());
 			this.hawk.getModelIndexer().setDB(db, true);
 		}
@@ -256,7 +256,7 @@ public class HModel implements IStateListener {
 			console.println("adding metamodel resource factories:");
 			for (IConfigurationElement mmparse : manager.getMmps()) {
 				IMetaModelResourceFactory f = (IMetaModelResourceFactory) mmparse
-						.createExecutableExtension(HManager.MMPARSER_CLASS_ATTRIBUTE);
+						.createExecutableExtension(HManager.METAMODEL_PARSER_CLASS_ATTRIBUTE);
 				if (enabledPlugins == null || enabledPlugins.contains(f.getClass().getName())) {
 					this.hawk.getModelIndexer().addMetaModelResourceFactory(f);
 					console.println(f.getHumanReadableName());
@@ -264,7 +264,7 @@ public class HModel implements IStateListener {
 			}
 			console.println("adding model resource factories:");
 			for (IConfigurationElement mparse : manager.getMps()) {
-				IModelResourceFactory f = (IModelResourceFactory) mparse.createExecutableExtension(HManager.MPARSER_CLASS_ATTRIBUTE);
+				IModelResourceFactory f = (IModelResourceFactory) mparse.createExecutableExtension(HManager.MODEL_PARSER_CLASS_ATTRIBUTE);
 				if (enabledPlugins == null || enabledPlugins.contains(f.getClass().getName())) {
 					this.hawk.getModelIndexer().addModelResourceFactory(f);
 					console.println(f.getHumanReadableName());
@@ -272,7 +272,7 @@ public class HModel implements IStateListener {
 			}
 			console.println("adding query engines:");
 			for (IConfigurationElement ql : manager.getLanguages()) {
-				IQueryEngine q = (IQueryEngine) ql.createExecutableExtension(HManager.QUERYLANG_CLASS_ATTRIBUTE);
+				IQueryEngine q = (IQueryEngine) ql.createExecutableExtension(HManager.QUERY_LANG_CLASS_ATTRIBUTE);
 				// So far we only have one choice (EOL) and it doesn't make sense to disable it - see HManager#getAvailablePlugins()
 //				if (enabledPlugins == null || enabledPlugins.contains(q.getClass().getName())) {
 					this.hawk.getModelIndexer().addQueryEngine(q);
@@ -282,7 +282,7 @@ public class HModel implements IStateListener {
 
 			console.println("adding model updaters:");
 			for (IConfigurationElement updater : manager.getUps()) {
-				IModelUpdater u = (IModelUpdater) updater.createExecutableExtension(HManager.MUPDATER_CLASS_ATTRIBUTE);
+				IModelUpdater u = (IModelUpdater) updater.createExecutableExtension(HManager.MODEL_UPDATER_CLASS_ATTRIBUTE);
 				if (enabledPlugins == null || enabledPlugins.contains(u.getClass().getName())) {
 					this.hawk.getModelIndexer().addModelUpdater(u);
 					console.println(u.getName());
@@ -291,7 +291,7 @@ public class HModel implements IStateListener {
 
 			console.println("adding graph change listeners:");
 			for (IConfigurationElement listener : manager.getGraphChangeListeners()) {
-				IGraphChangeListener l = (IGraphChangeListener) listener.createExecutableExtension(HManager.GCHANGEL_CLASS_ATTRIBUTE);
+				IGraphChangeListener l = (IGraphChangeListener) listener.createExecutableExtension(HManager.GRAPH_CHANGE_LISTENER_CLASS_ATTRIBUTE);
 				if (enabledPlugins == null || enabledPlugins.contains(l.getClass().getName())) {
 					l.setModelIndexer(this.hawk.getModelIndexer());
 					this.hawk.getModelIndexer().addGraphChangeListener(l);
@@ -527,7 +527,7 @@ public class HModel implements IStateListener {
 
 			if (hawkFactory.instancesCreateGraph()) {
 				// create the indexer with relevant database
-				IGraphDatabase db = manager.createGraph(hawk);
+				IGraphDatabase db = manager.createBackendGraph(hawk);
 				db.run(new File(this.getFolder()), getConsole());
 				hawk.getModelIndexer().setDB(db, false);
 			}

@@ -105,4 +105,12 @@ public interface IHawkFactory {
 	 * storage folder (<code>true</code>) or not (<code>false</code>).
 	 */
 	boolean instancesUseLocation();
+	
+	/**
+	 * Indicates whether the instance is remote (<code>true</code>) or not (<code>false</code>).
+	 */
+	boolean isRemote();
+	
+	String getHumanReadableName();
+
 }
