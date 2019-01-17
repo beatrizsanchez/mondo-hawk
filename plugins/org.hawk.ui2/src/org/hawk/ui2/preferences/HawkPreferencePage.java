@@ -14,6 +14,7 @@ public class HawkPreferencePage extends PreferencePage implements IWorkbenchPref
 	
     public HawkPreferencePage() {
         super("Default Enabled Plugins");
+        setDescription("In this preference...");
     	store = Activator.getDefault().getPreferenceStore();
         setPreferenceStore(store);
     }
@@ -21,13 +22,11 @@ public class HawkPreferencePage extends PreferencePage implements IWorkbenchPref
     @Override
     public void init(IWorkbench workbench) {
     	//  new StringFieldEditor(HawkPreferenceConstants.X, "Server:", getFieldEditorParent()));
-
     }
 
 
 	@Override	
 	protected Control createContents(Composite parent) {
-		// TODO Auto-generated method stub
 		return parent;
 	}
    

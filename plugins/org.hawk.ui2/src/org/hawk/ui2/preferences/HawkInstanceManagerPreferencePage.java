@@ -1,10 +1,6 @@
 package org.hawk.ui2.preferences;
 
-import java.util.Set;
-
 import org.eclipse.jface.preference.PreferencePage;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -13,14 +9,12 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
-import org.hawk.osgiserver.HModel;
-import org.hawk.ui2.util.HUIManager;
 
-public class HawkInstancesPreferencePage extends PreferencePage implements IWorkbenchPreferencePage{
+public class HawkInstanceManagerPreferencePage extends PreferencePage implements IWorkbenchPreferencePage{
 
 	private HawkInstanceBlock hawkBlock;
 
-	public HawkInstancesPreferencePage() {
+	public HawkInstanceManagerPreferencePage() {
 		super("Index Instances");
 	}
 	

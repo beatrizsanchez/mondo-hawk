@@ -47,7 +47,7 @@ public class RocksDBGreycatDatabase extends AbstractGreycatDatabase {
 	
 	@Override
 	public String getHumanReadableName() {
-		return "Rocks " + super.getHumanReadableName();
+		return "Rocks " + super.getHumanReadableName() + " (Deprecated)";
 	}
 
 }

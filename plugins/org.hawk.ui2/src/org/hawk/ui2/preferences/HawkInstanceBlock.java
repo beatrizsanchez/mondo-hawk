@@ -37,6 +37,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.ui.PlatformUI;
+import org.hawk.core.IModelIndexer.ShutdownRequestType;
 import org.hawk.osgiserver.HModel;
 import org.hawk.ui2.Activator;
 import org.hawk.ui2.dialog.HConfigDialog;
@@ -50,16 +51,16 @@ public class HawkInstanceBlock {
 	private Button createButton;
 	private Button importButton;
 	private Button removeButton;
-	private Button editButton;
+	private Button configButton;
+	private Button startButton;
+	private Button stopButton;
 
 	private Composite control;
 
 	private List<HModel> indexes = new ArrayList<>();
 	private TableViewer instanceListTableViewer;
-	private ISelection prevSelection = new StructuredSelection();
 	private Table fTable;
-	private static String fgLastUsedID;
-
+	
 	class HawkIndexContentProvider implements IStructuredContentProvider {
 
 		@Override
@@ -87,10 +88,8 @@ public class HawkInstanceBlock {
 				return hModel.getName();
 			else if (index == 1)
 				return hModel.getFolder();
-			else if (index == 2)
+			else 
 				return hModel.getStatus().toString();
-			else
-				return hModel.getInfo();
 		}
 
 		public Image getColumnImage(Object obj, int index) {
@@ -130,7 +129,7 @@ public class HawkInstanceBlock {
 
 		Font font = ancestor.getFont();
 	
-		Composite parent = new Composite(ancestor, GridData.FILL_BOTH);
+		Composite parent = new Composite(ancestor, SWT.NONE);
 		parent.setFont(font);
 		GridLayout layout = new GridLayout();
 		layout.numColumns = 2;
@@ -142,7 +141,7 @@ public class HawkInstanceBlock {
 		/*Label label = new Label(parent, 2);
 		label.setText("Instanced &Indexes:");*/
 
-		fTable= new Table(parent, SWT.BORDER | SWT.MULTI | SWT.FULL_SELECTION);
+		fTable= new Table(parent, SWT.BORDER | SWT.SINGLE | SWT.FULL_SELECTION);
 		GridData gd = new GridData(GridData.FILL_BOTH);
 		gd.heightHint = 250;
 		gd.widthHint = 350;
@@ -151,8 +150,11 @@ public class HawkInstanceBlock {
 		fTable.setHeaderVisible(true);
 		fTable.setLinesVisible(true);
 
+		int defaultwidth = 350/3 +1;
+
 		TableColumn column = new TableColumn(fTable, SWT.NULL);
 		column.setText("Name");
+		column.setWidth(defaultwidth);
 		column.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -160,11 +162,10 @@ public class HawkInstanceBlock {
 				instanceListTableViewer.refresh(true);
 			}
 		});
-		int defaultwidth = 350/4 +1;
-		column.setWidth(defaultwidth);
 
 		column = new TableColumn(fTable, SWT.NULL);
 		column.setText("Location");
+		column.setWidth(defaultwidth);
 		column.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -172,10 +173,10 @@ public class HawkInstanceBlock {
 				instanceListTableViewer.refresh(true);
 			}
 		});
-		column.setWidth(defaultwidth);
 
 		column = new TableColumn(fTable, SWT.NULL);
 		column.setText("Status");
+		column.setWidth(defaultwidth);
 		column.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -183,18 +184,6 @@ public class HawkInstanceBlock {
 				instanceListTableViewer.refresh(true);
 			}
 		});
-		column.setWidth(defaultwidth);
-		
-		column = new TableColumn(fTable, SWT.NULL);
-		column.setText("Info");
-		column.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				// sortByType(); FIXME
-				instanceListTableViewer.refresh(true);
-			}
-		});
-		column.setWidth(defaultwidth);
 
 		instanceListTableViewer = new TableViewer(fTable);
 		instanceListTableViewer.setLabelProvider(new HawkIndexLabelProvider());
@@ -207,20 +196,29 @@ public class HawkInstanceBlock {
 		instanceListTableViewer.addSelectionChangedListener(new ISelectionChangedListener() {
 			@Override
 			public void selectionChanged(SelectionChangedEvent evt) {
-				enableButtons();
+				ISelection selection = evt.getSelection();
+				HModel element = (HModel) ((IStructuredSelection)instanceListTableViewer.getSelection()).getFirstElement();
+				if (!selection.isEmpty()) {
+					toggleHawk(element);
+				}
 			}
+
+			
 		});
 
+		
 		instanceListTableViewer.addDoubleClickListener(new IDoubleClickListener() {
 			@Override
 			public void doubleClick(DoubleClickEvent e) {
-				if (!instanceListTableViewer.getSelection().isEmpty()) {
-					HModel selection = (HModel) instanceListTableViewer.getSelection();
+				if (!e.getSelection().isEmpty()) {
+					HModel selection = (HModel) ((IStructuredSelection)instanceListTableViewer.getSelection()).getFirstElement();
 					if (selection.isRunning()) {						
-						editIndex();
+						configIndex();
 					} else {
 						selection.start(selection.getManager());
+						instanceListTableViewer.refresh();
 					}
+					toggleHawk(selection);
 				}
 			}
 		});
@@ -246,49 +244,97 @@ public class HawkInstanceBlock {
 		
 		createButton = new Button(buttons, SWT.PUSH);
 		createButton.setText("&Create...");
+		createButton.setEnabled(true);
 		createButton.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event evt) {
 				createIndex();
 			}
 		});
-
-		editButton = new Button(buttons, SWT.PUSH);
-		editButton.setText("&Configure...");
-		editButton.addListener(SWT.Selection, new Listener() {
-			@Override
-			public void handleEvent(Event evt) {
-				editIndex();
-			}
-
-		});
-
-		removeButton = new Button(buttons, SWT.PUSH);
-		removeButton.setText("&Remove");
-		removeButton.addListener(SWT.Selection, new Listener() {
-			@Override
-			public void handleEvent(Event evt) {
-				removeIndex();
-			}
-		});
-
-	    /*Label separator = new Label(buttons, SWT.SEPARATOR | SWT.VERTICAL);
-	    separator.setOrientation(1);*/
-
+		
 		importButton = new Button(buttons, SWT.PUSH);
 		importButton.setText("&Import...");
+		importButton.setEnabled(true);
 		importButton.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event evt) {
 				importIndex();
 			}
 		});
+		
 
+		startButton = new Button(buttons, SWT.PUSH);
+		startButton.setText("&Start");
+		startButton.setEnabled(false);
+		startButton.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event evt) {
+				HModel element = (HModel) ((IStructuredSelection)instanceListTableViewer.getSelection()).getFirstElement();
+				if (!element.isRunning()) {						
+					element.start(element.getManager());
+				}
+				instanceListTableViewer.refresh();
+			}			
+		});
+		
+		stopButton = new Button(buttons, SWT.PUSH);
+		stopButton.setText("&Stop");
+		stopButton.setEnabled(false);
+		stopButton.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event evt) {
+				HModel element = (HModel) ((IStructuredSelection)instanceListTableViewer.getSelection()).getFirstElement();
+				if (element.isRunning()) {						
+					element.stop(ShutdownRequestType.ALWAYS);
+				}
+				instanceListTableViewer.refresh();
+			}
+		});
+
+		configButton = new Button(buttons, SWT.PUSH);
+		configButton.setText("&Configure...");
+		configButton.setEnabled(false);
+		configButton.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event evt) {
+				configIndex();
+			}
+
+		});
+
+		removeButton = new Button(buttons, SWT.PUSH);
+		removeButton.setText("&Remove");
+		removeButton.setEnabled(false);
+		removeButton.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event evt) {
+				removeIndex();
+			}
+		});
+		
+
+	    /*Label separator = new Label(buttons, SWT.SEPARATOR | SWT.VERTICAL);
+	    separator.setOrientation(1);*/
+
+		
 		fillWithWorkspaceIndexes();
-		enableButtons();
-		createButton.setEnabled(true);//JavaRuntime.getVMInstallTypes().length > 0); FIXME
+		//JavaRuntime.getVMInstallTypes().length > 0); FIXME
 		
 		instanceListTableViewer.refresh();
+	}
+	
+	private void toggleHawk(HModel element) {
+		if (element.isRunning()){
+			configButton.setEnabled(true);
+			removeButton.setEnabled(true);
+			stopButton.setEnabled(true);
+			startButton.setEnabled(false);
+		} else {
+			configButton.setEnabled(false);
+			removeButton.setEnabled(false);
+			stopButton.setEnabled(false);
+			startButton.setEnabled(true);
+		}
 	}
 	
 	public HModel[] getIndexes() {
@@ -316,12 +362,6 @@ public class HawkInstanceBlock {
 		}
 	}*/
 	
-	private void enableButtons() {
-		createButton.setEnabled(true);
-		removeButton.setEnabled(true);
-		editButton.setEnabled(true);
-		importButton.setEnabled(true);
-	}
 	
 	private void createIndex() {
 		HWizard wizard = new HWizard();
@@ -339,8 +379,7 @@ public class HawkInstanceBlock {
 		}
 	}
 	
-	private void editIndex() {
-		// TODO Auto-generated method stub
+	private void configIndex() {
 		IStructuredSelection selection= (IStructuredSelection)instanceListTableViewer.getSelection();
 		HModel firstElement = (HModel) selection.getFirstElement();
 		if (firstElement == null) {
@@ -355,19 +394,21 @@ public class HawkInstanceBlock {
 	
 	private void removeIndex() {
 		IStructuredSelection selected = (IStructuredSelection) instanceListTableViewer.getSelection();
-		if (selected.size() == 1) {
+		if (selected.size() >= 1) {
 			HModel hawkmodel = (HModel) selected.getFirstElement();
 			try {
 				HUIManager.getInstance().delete(hawkmodel, hawkmodel.exists());
 			} catch (BackingStoreException e) {
 				e.printStackTrace();
 			}
-			instanceListTableViewer.refresh();
 		}
+		instanceListTableViewer.refresh();
 	}
 
 	private void importIndex() {
 		final HImportDialog dialog = new HImportDialog(getShell());
+		dialog.setBlockOnOpen(true);
 		dialog.open();
+		instanceListTableViewer.refresh();
 	}
 }

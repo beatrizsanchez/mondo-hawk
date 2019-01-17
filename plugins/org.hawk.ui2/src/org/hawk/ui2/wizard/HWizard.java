@@ -73,7 +73,7 @@ public class HWizard extends Wizard implements INewWizard {
 			final String name = page.getHawkName();
 			final String folder = page.getContainerName();
 			final String dbType = page.getDBID();
-			//final List<String> plugins = page.getSelectedAdvancedPlugins();
+			final List<String> plugins = page.getSelectedAdvancedPlugins();
 			final String location = page.getLocation();
 			final IHawkFactory factory = page.getFactory();
 			final int maxDelay = page.getMaxDelay();
@@ -88,7 +88,7 @@ public class HWizard extends Wizard implements INewWizard {
 						throws InvocationTargetException {
 					try {
 						doFinish(name, new File(folder), location, dbType,
-								new ArrayList<String>(), monitor, credStore, factory, minDelay,
+								plugins, monitor, credStore, factory, minDelay,
 								maxDelay,isNew);
 					} catch (Exception e) {
 						throw new InvocationTargetException(e);

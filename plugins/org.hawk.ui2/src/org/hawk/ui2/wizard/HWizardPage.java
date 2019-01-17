@@ -480,9 +480,13 @@ public class HWizardPage extends WizardPage {
 	}
 
 	protected void updatePlugins() {
+		HManager instance = HManager.getInstance();
+
+		updaters = instance.getModelUpdaterInstances();
+		metamodels = instance.getMetamodelParserInstances();
+		models = instance.getModelParserInstances();
 		try {
 			final IHawkFactory factory = getSelectedFactory();
-			HUIManager instance = HUIManager.getInstance();
 			//extractPlugins(factory, modelPluginTable, instance.getModelTypes());
 			//extractPlugins(factory, metamodelPluginTable, instance.getMetaModelTypes());
 			extractPlugins(factory, updaterPluginTable, instance.getUpdaterTypes());
@@ -494,6 +498,7 @@ public class HWizardPage extends WizardPage {
 	private final void extractPlugins(IHawkFactory factory, final CheckboxTableViewer table,
 			Set<String> availablPlugins) throws Exception {
 		List<String> plugins = factory.listPlugins(remoteLocationText.getText());
+		
 		if (plugins == null) {
 			plugins = new ArrayList<>();
 			plugins.addAll(availablPlugins);
@@ -535,9 +540,15 @@ public class HWizardPage extends WizardPage {
 			}
 			final List<String> plugins = backendPlugins;
 			
-			List<String> newNames = backends.entrySet().stream().filter(e-> plugins.contains(e.getKey())).map(e->e.getValue().getHumanReadableName()).collect(Collectors.toList());
+			backends = HManager.getInstance().getBackendInstances();
+			List<String> newNames = backends.entrySet().stream()
+					.filter(e-> {
+						plugins.contains(e.getKey());
+						return plugins.contains(e.getKey());
+						}).map(e->e.getValue().getHumanReadableName()).collect(Collectors.toList());
+					
 			
-			if (newNames.equals(Arrays.asList(backendNameText.getItems()))) {
+			if (!newNames.equals(Arrays.asList(backendNameText.getItems()))) {
 				backendNameText.removeAll();
 				for (String s : newNames) {
 					backendNameText.add(s);
@@ -580,13 +591,15 @@ public class HWizardPage extends WizardPage {
 	protected List<String> getSelectedAdvancedPlugins() {
 		List<String> selected = new ArrayList<String>();
 		//selected.addAll(getSelectedModelPlugins());
-		selected.addAll(getSelectedMetaModelPlugins());
-		//selected.addAll(getSelectedModelUpdaterPlugins());
+		//selected.addAll(getSelectedMetaModelPlugins());
+		selected.addAll(getSelectedModelUpdaterPlugins());
 		return selected;
 	}
+	
 
 	public String getDBID() {
-		return backendNameText.getText();
+		return (String) backends.entrySet().stream().filter(e-> e.getValue().getHumanReadableName().equals(backendNameText.getText())).findFirst().map(e->(String) e.getKey()).get();
+			//return backendNameText.getText();
 	}
 
 	public String getHawkName() {
