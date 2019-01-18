@@ -39,8 +39,8 @@ public class ModelioGraphChangeListener implements IGraphChangeListener {
 	}
 
 	@Override
-	public String getName() {
-		return getClass().getName();
+	public String getHumanReadableName() {
+		return "Modelio Graph Change Listener";
 	}
 
 	@Override

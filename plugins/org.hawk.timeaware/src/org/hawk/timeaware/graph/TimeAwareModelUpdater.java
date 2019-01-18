@@ -93,7 +93,7 @@ public class TimeAwareModelUpdater extends GraphModelUpdater {
 	}
 	
 	@Override
-	public String getName() {
+	public String getHumanReadableName() {
 		return "Default Hawk TimeAwareModelUpdater (v1.0)";
 	}
 }

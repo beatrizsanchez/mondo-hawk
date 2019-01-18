@@ -57,15 +57,14 @@ public class HawkInstanceBlock {
 
 	private Composite control;
 
-	private List<HModel> indexes = new ArrayList<>();
 	private TableViewer instanceListTableViewer;
 	private Table fTable;
-	
+		
 	class HawkIndexContentProvider implements IStructuredContentProvider {
 
 		@Override
 		public Object[] getElements(Object input) {
-			return (Object[]) indexes.toArray();
+			return (Object[]) getIndexes();
 		}
 
 		@Override
@@ -188,7 +187,6 @@ public class HawkInstanceBlock {
 		instanceListTableViewer = new TableViewer(fTable);
 		instanceListTableViewer.setLabelProvider(new HawkIndexLabelProvider());
 		instanceListTableViewer.setContentProvider(new HawkIndexContentProvider());
-		//instanceListTableViewer.setContentProvider(HUIManager.getInstance());
 		instanceListTableViewer.setUseHashlookup(true);
 		// by default, sort by name
 		// sortByName(); // FIXME
@@ -200,10 +198,11 @@ public class HawkInstanceBlock {
 				HModel element = (HModel) ((IStructuredSelection)instanceListTableViewer.getSelection()).getFirstElement();
 				if (!selection.isEmpty()) {
 					toggleHawk(element);
+					removeButton.setEnabled(true);
+				} else {
+					removeButton.setEnabled(false);
 				}
-			}
-
-			
+			}			
 		});
 
 		
@@ -317,7 +316,7 @@ public class HawkInstanceBlock {
 	    separator.setOrientation(1);*/
 
 		
-		fillWithWorkspaceIndexes();
+		updateIndexes();
 		//JavaRuntime.getVMInstallTypes().length > 0); FIXME
 		
 		instanceListTableViewer.refresh();
@@ -326,41 +325,27 @@ public class HawkInstanceBlock {
 	private void toggleHawk(HModel element) {
 		if (element.isRunning()){
 			configButton.setEnabled(true);
-			removeButton.setEnabled(true);
 			stopButton.setEnabled(true);
 			startButton.setEnabled(false);
 		} else {
 			configButton.setEnabled(false);
-			removeButton.setEnabled(false);
 			stopButton.setEnabled(false);
 			startButton.setEnabled(true);
 		}
 	}
 	
 	public HModel[] getIndexes() {
-		return indexes.toArray(new HModel[indexes.size()]);
+		Set<HModel> hawks = HUIManager.getInstance().getHawks();
+		return hawks.toArray(new HModel[hawks.size()]);
 	}
 	
-	protected void setIndexes(HModel[] idx){
-		indexes.clear();
-		indexes.addAll(Arrays.asList(idx));
-		instanceListTableViewer.setInput(idx);
+	
+	protected void updateIndexes() {
+		// fill with JREs
+		HModel[] array = getIndexes();
+		instanceListTableViewer.setInput(array);
 		instanceListTableViewer.refresh();
 	}
-	
-	protected void fillWithWorkspaceIndexes() {
-		// fill with JREs
-		Set<HModel> hawks = HUIManager.getInstance().getHawks();
-		setIndexes(hawks.toArray(new HModel[hawks.size()]));
-	}
-	
-	/*public void setCheckedJRE(IVMInstall vm) {
-		if (vm == null) {
-			setSelection(new StructuredSelection());
-		} else {
-			setSelection(new StructuredSelection(vm));
-		}
-	}*/
 	
 	
 	private void createIndex() {
@@ -369,7 +354,6 @@ public class HawkInstanceBlock {
 		if (dialog.open() == Window.OK) {
 		HModel result = wizard.getResult();
 			if (result != null) {
-				indexes.add(result);
 				//refresh from model
 				instanceListTableViewer.refresh();
 				instanceListTableViewer.setSelection(new StructuredSelection(result));

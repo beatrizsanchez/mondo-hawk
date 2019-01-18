@@ -239,10 +239,17 @@ public class HModel implements IStateListener {
 	public void addPlugins(List<String> plugins) throws Exception {
 		if(this.enabledPlugins == null) {
 			this.enabledPlugins = plugins;
-		} else {
+		} else if (!enabledPlugins.isEmpty()){
 			this.enabledPlugins.addAll(plugins);
 		}
 		enablePlugins();
+	}
+	
+	public void removePlugins(List<String> plugins) throws Exception {
+		if(this.enabledPlugins != null && !this.enabledPlugins.isEmpty()) {
+			this.enabledPlugins.removeAll(plugins);
+			disablePlugins(plugins);
+		}
 	}
 	
 	private void enablePlugins() throws Exception {
@@ -285,7 +292,7 @@ public class HModel implements IStateListener {
 				IModelUpdater u = (IModelUpdater) updater.createExecutableExtension(HManager.MODEL_UPDATER_CLASS_ATTRIBUTE);
 				if (enabledPlugins == null || enabledPlugins.contains(u.getClass().getName())) {
 					this.hawk.getModelIndexer().addModelUpdater(u);
-					console.println(u.getName());
+					console.println(u.getHumanReadableName());
 				}
 			}
 
@@ -295,7 +302,49 @@ public class HModel implements IStateListener {
 				if (enabledPlugins == null || enabledPlugins.contains(l.getClass().getName())) {
 					l.setModelIndexer(this.hawk.getModelIndexer());
 					this.hawk.getModelIndexer().addGraphChangeListener(l);
-					console.println(l.getName());
+					console.println(l.getHumanReadableName());
+				}
+			}
+		}
+	}
+	
+	private void disablePlugins(List<String> plugins) throws Exception {
+		if (hawkFactory.instancesAreExtensible() && plugins != null) {
+			final IConsole console = getConsole();
+			console.println("removing metamodel resource factories:");
+			for (IConfigurationElement mmparse : manager.getMmps()) {
+				IMetaModelResourceFactory f = (IMetaModelResourceFactory) mmparse
+						.createExecutableExtension(HManager.METAMODEL_PARSER_CLASS_ATTRIBUTE);
+				if (plugins.contains(f.getClass().getName())) {
+					this.hawk.getModelIndexer().removeMetaModelResourceFactory(f);
+					console.println(f.getHumanReadableName());
+				}
+			}
+			console.println("removing model resource factories:");
+			for (IConfigurationElement mparse : manager.getMps()) {
+				IModelResourceFactory f = (IModelResourceFactory) mparse.createExecutableExtension(HManager.MODEL_PARSER_CLASS_ATTRIBUTE);
+				if (plugins.contains(f.getClass().getName())) {
+					this.hawk.getModelIndexer().removeModelResourceFactory(f);
+					console.println(f.getHumanReadableName());
+				}
+			}
+
+			console.println("removing model updaters:");
+			for (IConfigurationElement updater : manager.getUps()) {
+				IModelUpdater u = (IModelUpdater) updater.createExecutableExtension(HManager.MODEL_UPDATER_CLASS_ATTRIBUTE);
+				if (plugins.contains(u.getClass().getName())) {
+					this.hawk.getModelIndexer().removeModelUpdater(u);
+					console.println(u.getHumanReadableName());
+				}
+			}
+
+			console.println("removing graph change listeners:");
+			for (IConfigurationElement listener : manager.getGraphChangeListeners()) {
+				IGraphChangeListener l = (IGraphChangeListener) listener.createExecutableExtension(HManager.GRAPH_CHANGE_LISTENER_CLASS_ATTRIBUTE);
+				if (plugins.contains(l.getClass().getName())) {
+					l.setModelIndexer(this.hawk.getModelIndexer());
+					this.hawk.getModelIndexer().removeGraphChangeListener(l);
+					console.println(l.getHumanReadableName());
 				}
 			}
 		}

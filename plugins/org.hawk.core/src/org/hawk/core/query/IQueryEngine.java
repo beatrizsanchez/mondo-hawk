@@ -172,4 +172,6 @@ public interface IQueryEngine {
 		return query(m, code.toString(), context);
 	}
 
+	public String getHumanReadableName();
+	
 }

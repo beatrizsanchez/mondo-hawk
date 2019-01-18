@@ -27,6 +27,10 @@ import org.hawk.core.model.IHawkModelResource;
  */
 public interface IModelUpdater {
 
+	default String getType() {
+		return getClass().getName();
+	}
+	
 	public boolean caresAboutResources();
 
 	/**
@@ -52,7 +56,7 @@ public interface IModelUpdater {
 	public void updateIndexedAttribute(String metamodeluri, String typename,
 			String attributename);
 
-	public String getName();
+	public String getHumanReadableName();
 
 	public Set<VcsCommitItem> compareWithLocalFiles(
 			Set<VcsCommitItem> interestingfiles);

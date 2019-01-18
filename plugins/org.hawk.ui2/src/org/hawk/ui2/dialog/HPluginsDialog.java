@@ -41,7 +41,7 @@ public class HPluginsDialog extends TitleAreaDialog {
 			@Override
 			public String getText(Object element) {
 				IModelUpdater updater = (IModelUpdater)element;
-				return updater.getName();
+				return updater.getHumanReadableName();
 			}
 		});
 

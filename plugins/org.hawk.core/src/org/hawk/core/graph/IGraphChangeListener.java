@@ -44,7 +44,11 @@ import org.hawk.core.model.IHawkPackage;
  */
 public interface IGraphChangeListener {
 
-	String getName();
+	default String getType() {
+		return getClass().getName();
+	}
+	
+	String getHumanReadableName();
 
 	void setModelIndexer(IModelIndexer m);
 

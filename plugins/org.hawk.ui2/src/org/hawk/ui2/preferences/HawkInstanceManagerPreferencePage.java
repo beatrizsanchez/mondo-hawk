@@ -50,10 +50,4 @@ public class HawkInstanceManagerPreferencePage extends PreferencePage implements
 		return parent;
 	}
 	
-	@Override
-	public boolean performOk() {
-		// TODO 
-		return super.performOk();
-	}
-	
 }

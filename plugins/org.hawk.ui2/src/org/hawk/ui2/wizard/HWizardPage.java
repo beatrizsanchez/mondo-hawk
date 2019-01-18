@@ -232,7 +232,7 @@ public class HWizardPage extends WizardPage {
 				if (element !=null ) {
 					String updater = (String)element;
 					IModelUpdater iModelUpdater = updaters.get(updater);
-					return (iModelUpdater != null) ? iModelUpdater.getName() : updater ;					
+					return (iModelUpdater != null) ? iModelUpdater.getHumanReadableName() : updater ;					
 				} else {
 					return "";
 				}

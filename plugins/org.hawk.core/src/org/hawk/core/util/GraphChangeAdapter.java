@@ -30,7 +30,7 @@ import org.hawk.core.model.IHawkPackage;
 public class GraphChangeAdapter implements IGraphChangeListener {
 
 	@Override
-	public String getName() {
+	public String getHumanReadableName() {
 		return null;
 	}
 

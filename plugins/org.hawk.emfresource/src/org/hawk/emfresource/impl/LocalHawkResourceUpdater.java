@@ -61,7 +61,7 @@ final class LocalHawkResourceUpdater implements IGraphChangeListener {
 	}
 
 	@Override
-	public String getName() {
+	public String getHumanReadableName() {
 		return "Local Hawk resource " + resource.getURI();
 	}
 

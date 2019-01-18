@@ -45,21 +45,15 @@
       </page>
       <page
             category="org.hawk.ui.preferences.HawkPreferencePage"
+            class="org.hawk.ui2.preferences.HawkInstancePluginConfigurationPreferencePage"
+            id="org.hawk.ui.preferences.HawkPluginConfigurationPreferencePage"
+            name="Plugin Manager">
+      </page>
+      <page
+            category="org.hawk.ui.preferences.HawkPreferencePage"
             class="org.hawk.ui2.preferences.HawkInstanceManagerPreferencePage"
             id="org.hawk.ui.preferences.HawkInstancesPreferencePage"
             name="Instance Manager">
-      </page>
-      <page
-            category="org.hawk.ui.preferences.HawkPreferencePage"
-            class="org.hawk.ui2.preferences.HawkPluginConfigurationPreferencePage"
-            id="org.hawk.ui.preferences.HawkPluginConfigurationPreferencePage"
-            name="Plugins">
-      </page>
-      <page
-            category="org.hawk.ui.preferences.HawkPreferencePage"
-            class="org.hawk.ui2.preferences.HawkInstancePluginConfigurationPreferencePage"
-            id="org.hawk.ui.preferences.HawkInstanceConfigurationPreferencePage"
-            name="Configuration">
       </page>
    </extension>
    

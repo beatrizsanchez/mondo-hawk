@@ -151,7 +151,7 @@ public class ArtemisProducerGraphChangeListener implements IGraphChangeListener 
 	}
 
 	@Override
-	public String getName() {
+	public String getHumanReadableName() {
 		return "Artemis graph change listener";
 	}
 

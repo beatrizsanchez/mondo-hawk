@@ -245,6 +245,11 @@ public class ThriftRemoteModelIndexer implements IModelIndexer, IMetaModelIntros
 		public void setDefaultNamespaces(String defaultNamespaces) {
 			this.defaultNamespaces = defaultNamespaces;
 		}
+
+		@Override
+		public String getHumanReadableName() {
+			return "Thrift Remote Query Engine";
+		}
 	}
 
 	/**
@@ -1003,6 +1008,23 @@ public class ThriftRemoteModelIndexer implements IModelIndexer, IMetaModelIntros
 			LOGGER.error(e.getMessage(), e);
 			return Collections.emptyList();
 		}
+	}
+
+	@Override
+	public void removeMetaModelResourceFactory(IMetaModelResourceFactory metaModelParser) {
+		console.printerrln("Cannot remove metamodel resource factories to " + this.getClass().getName());
+	}
+
+	@Override
+	public void removeModelResourceFactory(IModelResourceFactory modelParser) {
+		console.printerrln("Cannot remove model resource factories to " + this.getClass().getName());
+
+	}
+
+	@Override
+	public void removeModelUpdater(IModelUpdater updater) throws Exception {
+		console.printerrln("Cannot remove model updaters to " + this.getClass().getName());
+
 	}
 
 }

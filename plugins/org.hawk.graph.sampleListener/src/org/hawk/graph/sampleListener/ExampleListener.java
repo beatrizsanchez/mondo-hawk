@@ -160,7 +160,7 @@ public class ExampleListener implements IGraphChangeListener {
 	}
 
 	@Override
-	public String getName() {
+	public String getHumanReadableName() {
 		return "ExampleListener";
 	}
 
