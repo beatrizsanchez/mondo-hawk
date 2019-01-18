@@ -43,7 +43,7 @@ import org.hawk.core.VcsCommit;
 import org.hawk.core.VcsCommitItem;
 import org.hawk.core.VcsRepositoryDelta;
 
-public class Git implements IVcsManager {
+public class GitPrevManager implements IVcsManager {
 
 	private static final String FIRST_REV = "0";
 
@@ -111,7 +111,7 @@ public class Git implements IVcsManager {
 
 	private boolean isFrozen = false;
 
-	public Git() {
+	public GitPrevManager() {
 
 	}
 
