@@ -31,7 +31,7 @@ public class HawkPreferencePage extends PreferencePage implements IWorkbenchPref
 	
     public HawkPreferencePage() {
         super("Default Enabled Plugins");
-        setDescription("In this preference...");
+        setDescription("Welcome to the Hawk Preferences sections");
     	store = Activator.getDefault().getPreferenceStore();
         setPreferenceStore(store);
     }

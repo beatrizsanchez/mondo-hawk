@@ -254,10 +254,13 @@ public class HawkInstanceBlock {
 		layout.marginWidth = 0;
 		layout.marginHeight = 0;
 		buttons.setLayout(layout);
+
+		GridData horizontalFill = new GridData(SWT.FILL, SWT.FILL_WINDING, true, true);
 		
 		createButton = new Button(buttons, SWT.PUSH);
 		createButton.setText("&Create...");
 		createButton.setEnabled(true);
+		createButton.setLayoutData(horizontalFill);
 		createButton.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event evt) {
@@ -268,6 +271,7 @@ public class HawkInstanceBlock {
 		importButton = new Button(buttons, SWT.PUSH);
 		importButton.setText("&Import...");
 		importButton.setEnabled(true);
+		importButton.setLayoutData(horizontalFill);
 		importButton.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event evt) {
@@ -279,6 +283,7 @@ public class HawkInstanceBlock {
 		startButton = new Button(buttons, SWT.PUSH);
 		startButton.setText("&Start");
 		startButton.setEnabled(false);
+		startButton.setLayoutData(horizontalFill);
 		startButton.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event evt) {
@@ -294,6 +299,7 @@ public class HawkInstanceBlock {
 		stopButton = new Button(buttons, SWT.PUSH);
 		stopButton.setText("&Stop");
 		stopButton.setEnabled(false);
+		stopButton.setLayoutData(horizontalFill);
 		stopButton.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event evt) {
@@ -320,6 +326,7 @@ public class HawkInstanceBlock {
 		removeButton = new Button(buttons, SWT.PUSH);
 		removeButton.setText("&Remove");
 		removeButton.setEnabled(false);
+		removeButton.setLayoutData(horizontalFill);
 		removeButton.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event evt) {
@@ -340,13 +347,12 @@ public class HawkInstanceBlock {
 	
 	private void toggleHawk(HModel element) {
 		boolean running = element.isRunning();
-		configButton.setEnabled(running);
-		stopButton.setEnabled(running);
-		startButton.setEnabled(!running);
+		toggleRunning(running);
 	}
 	
 	private void toggleRunning(boolean running){
 		startButton.setEnabled(!running);
+		configButton.setEnabled(running);
 		stopButton.setEnabled(running);
 	}
 	
