@@ -71,7 +71,7 @@ public class SyncValidationListener implements IGraphChangeListener {
 
 	@Override
 	public String getHumanReadableName() {
-		return getClass().getSimpleName();
+		return "Sync Validation Listener";
 	}
 
 	@Override

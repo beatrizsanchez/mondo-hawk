@@ -277,7 +277,7 @@ public class GraphModelUpdater implements IModelUpdater {
 
 	@Override
 	public String getHumanReadableName() {
-		return "Default Hawk GraphModelUpdater (v1.0)";
+		return "Default Hawk Graph Model Updater (v1.0)";
 	}
 
 	@Override

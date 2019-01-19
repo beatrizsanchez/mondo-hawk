@@ -228,7 +228,7 @@ public class CompositeGraphChangeListener extends LinkedHashSet<IGraphChangeList
 
 	@Override
 	public String getHumanReadableName() {
-		final StringBuffer sbuf = new StringBuffer("composite(");
+		final StringBuffer sbuf = new StringBuffer("Composite(");
 		boolean first = false;
 		for (IGraphChangeListener l : this) {
 			if (first) {

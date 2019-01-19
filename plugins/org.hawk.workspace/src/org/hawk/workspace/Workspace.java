@@ -271,7 +271,7 @@ public class Workspace implements IVcsManager {
 
 	@Override
 	public String getHumanReadableName() {
-		return "Workspace driver - workspace timestamp based";
+		return "Workspace Driver - Workspace Timestamp Based";
 	}
 
 	@Override
