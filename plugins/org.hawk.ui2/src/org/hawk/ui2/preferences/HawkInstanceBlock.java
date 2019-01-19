@@ -286,6 +286,7 @@ public class HawkInstanceBlock {
 				if (!element.isRunning()) {						
 					element.start(element.getManager());
 				}
+				toggleRunning(true);
 				instanceListTableViewer.refresh();
 			}			
 		});
@@ -300,6 +301,7 @@ public class HawkInstanceBlock {
 				if (element.isRunning()) {						
 					element.stop(ShutdownRequestType.ALWAYS);
 				}
+				toggleRunning(false);
 				instanceListTableViewer.refresh();
 			}
 		});
@@ -337,15 +339,15 @@ public class HawkInstanceBlock {
 	}
 	
 	private void toggleHawk(HModel element) {
-		if (element.isRunning()){
-			configButton.setEnabled(true);
-			stopButton.setEnabled(true);
-			startButton.setEnabled(false);
-		} else {
-			configButton.setEnabled(false);
-			stopButton.setEnabled(false);
-			startButton.setEnabled(true);
-		}
+		boolean running = element.isRunning();
+		configButton.setEnabled(running);
+		stopButton.setEnabled(running);
+		startButton.setEnabled(!running);
+	}
+	
+	private void toggleRunning(boolean running){
+		startButton.setEnabled(!running);
+		stopButton.setEnabled(running);
 	}
 	
 	public HModel[] getIndexes() {
