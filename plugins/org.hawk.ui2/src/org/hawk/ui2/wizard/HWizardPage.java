@@ -56,6 +56,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 import org.hawk.core.IHawkFactory;
 import org.hawk.core.IMetaModelResourceFactory;
@@ -65,6 +67,7 @@ import org.hawk.core.graph.IGraphDatabase;
 import org.hawk.core.runtime.ModelIndexerImpl;
 import org.hawk.osgiserver.HManager;
 import org.hawk.ui2.Activator;
+import org.hawk.ui2.preferences.HawkPluginSelectionBlock;
 import org.hawk.ui2.util.HUIManager;
 
 public class HWizardPage extends WizardPage {
@@ -130,6 +133,8 @@ public class HWizardPage extends WizardPage {
 	private Map<String, IModelUpdater> updaters;
 	private Map<String, ?> models;
 	private Map<String, ?> metamodels;
+	
+	private HawkPluginSelectionBlock pluginSelectionBlock;
 
 	public HWizardPage(ISelection selection) {
 		super("wizardPage");
@@ -144,6 +149,38 @@ public class HWizardPage extends WizardPage {
 
 		hminstance = HUIManager.getInstance();
 
+		TabFolder tabFolder = new TabFolder(parent, SWT.BORDER);
+		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		
+		TabItem mainConfigTab = new TabItem(tabFolder, SWT.NULL);
+		mainConfigTab.setText("Base Configuration");
+		mainConfigTab.setControl(createBaseConfig(tabFolder));
+		
+		TabItem advancedTab = new TabItem(tabFolder, SWT.NULL);
+		advancedTab.setText("Advanced");
+		advancedTab.setControl(createAdvancedConfig(tabFolder));
+		
+	}
+
+	private Composite createAdvancedConfig(Composite parent) {
+		Composite container = new Composite(parent, SWT.NULL);
+		GridLayout layout = new GridLayout();
+		layout.numColumns = 3;
+		layout.verticalSpacing = 9;
+		container.setLayout(layout);
+
+		GridData gd;
+		
+		pluginSelectionBlock = new HawkPluginSelectionBlock();
+		pluginSelectionBlock.createControl(container);
+		
+		//enableOrDisable(container, pluginSelectionBlock.getMetamodelTableViewer(), pluginSelectionBlock.getModelTableViewer(), pluginSelectionBlock.getGraphChangeListenerTableViewer());
+
+		return container;
+	}
+
+	
+	private Composite createBaseConfig(Composite parent) {
 		Composite container = new Composite(parent, SWT.NULL);
 		GridLayout layout = new GridLayout();
 		layout.numColumns = 3;
@@ -278,6 +315,8 @@ public class HWizardPage extends WizardPage {
 		initialize();
 		dialogChanged();
 		setControl(container);
+		
+		return container;
 	}
 
 	private List<String> getBackendNames() {
@@ -326,16 +365,25 @@ public class HWizardPage extends WizardPage {
 			}
 		});
 
-		Composite cTableButtons = new Composite(container, SWT.NULL);
-		gd = new GridData(SWT.FILL, SWT.TOP, true, true);
+		enableOrDisable(container, tableviewer);
+		
+		return tableviewer;
+	}
+
+	private void enableOrDisable(Composite parent, final CheckboxTableViewer... tableviewers) {
+		Composite cTableButtons = new Composite(parent, SWT.NULL);
+		GridData gd = new GridData(SWT.FILL, SWT.TOP, true, true);
 		cTableButtons.setLayoutData(gd);
 		cTableButtons.setLayout(new FillLayout(SWT.VERTICAL));
+		
 		Button btnEnableAll = new Button(cTableButtons, SWT.NULL);
 		btnEnableAll.setText("Enable all");
 		btnEnableAll.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				tableviewer.setAllChecked(true);
+				for (CheckboxTableViewer tableviewer : tableviewers) {
+					tableviewer.setAllChecked(true);
+				}
 				dialogChanged();
 			}
 		});
@@ -344,11 +392,12 @@ public class HWizardPage extends WizardPage {
 		btnDisableAll.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				tableviewer.setAllChecked(false);
+				for (CheckboxTableViewer tableviewer : tableviewers) {
+					tableviewer.setAllChecked(false);
+				}
 				dialogChanged();
 			}
 		});
-		return tableviewer;
 	}
 
 	private void initialize() {
@@ -566,32 +615,13 @@ public class HWizardPage extends WizardPage {
 		return folderText.getText();
 	}
 
-	protected List<String> getSelectedModelPlugins() {
-		Map<String, IModelResourceFactory> modelFactories = hminstance.getModelParserInstances();
-		List<String> checked = Arrays.asList((String[]) modelPluginTable.getCheckedElements());
-		List<String> plugins = modelFactories.entrySet().stream()
-				.filter(e -> checked.contains(e.getValue().getHumanReadableName())).map(m -> m.getKey())
-				.collect(Collectors.toList());
-		return plugins;
-	}
-
-	protected List<String> getSelectedMetaModelPlugins() {
-		Map<String, IMetaModelResourceFactory> modelFactories = hminstance.getMetamodelParserInstances();
-		List<String> checked = Arrays.asList((String[]) metamodelPluginTable.getCheckedElements());
-		List<String> plugins = modelFactories.entrySet().stream()
-				.filter(e -> checked.contains(e.getValue().getHumanReadableName())).map(m -> m.getKey())
-				.collect(Collectors.toList());
-		return plugins;
-	}
-
 	protected List<String> getSelectedModelUpdaterPlugins() {
 		return Arrays.asList(updaterPluginTable.getCheckedElements()).stream().map(e -> (String) e).collect(Collectors.toList());
 	}
 
 	protected List<String> getSelectedAdvancedPlugins() {
 		List<String> selected = new ArrayList<String>();
-		//selected.addAll(getSelectedModelPlugins());
-		//selected.addAll(getSelectedMetaModelPlugins());
+		selected.addAll(pluginSelectionBlock.getAllChecked());
 		selected.addAll(getSelectedModelUpdaterPlugins());
 		return selected;
 	}
